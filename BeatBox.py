@@ -4,7 +4,7 @@ import customtkinter as ctk
 from customtkinter import CTkImage
 from tkinter import filedialog, Listbox, LEFT, BOTH, Y, RIGHT, END
 from PIL import Image, ImageTk
-import time
+#import time
 
 pygame.mixer.init()
 
@@ -12,7 +12,7 @@ class MusicPlayer:
     def __init__(self, root):
         self.root = root
         self.root.title("BeatBox")
-        self.root.minsize(1200, 580)
+        self.root.minsize(1400, 620)
         ctk.set_appearance_mode("dark")
 
         # determine the directory of the current script
@@ -52,7 +52,7 @@ class MusicPlayer:
 
         # control frame
         self.control_frame = ctk.CTkFrame(self.root)
-        self.control_frame.place(relx=0.0125, rely=0.33, relwidth=0.8, relheight=0.1)
+        self.control_frame.place(relx=0.0125, rely=0.33, relwidth=0.82, relheight=0.1)
 
         # control frame label
         self.control_label = ctk.CTkLabel(self.root, text="Controls", font=("Helvetica", 12, "bold"))
@@ -62,24 +62,27 @@ class MusicPlayer:
         self.load_button = ctk.CTkButton(self.control_frame, text="Load Folder", command=self.load_folder)
         self.load_button.grid(row=0, column=0, padx=10, pady=10)
 
+        self.prev_button = ctk.CTkButton(self.control_frame, text="|<", command=self.previous_song)
+        self.prev_button.grid(row=0, column=1, padx=10, pady=10)
+
         self.play_button = ctk.CTkButton(self.control_frame, text="▶", command=self.play_song)
-        self.play_button.grid(row=0, column=1, padx=10, pady=10)
+        self.play_button.grid(row=0, column=2, padx=10, pady=10)
 
         self.pause_button = ctk.CTkButton(self.control_frame, text="||", command=self.pause_song)
-        self.pause_button.grid(row=0, column=2, padx=10, pady=10)
+        self.pause_button.grid(row=0, column=3, padx=10, pady=10)
 
         self.stop_button = ctk.CTkButton(self.control_frame, text="■", command=self.stop_song)
-        self.stop_button.grid(row=0, column=3, padx=10, pady=10)
+        self.stop_button.grid(row=0, column=4, padx=10, pady=10)
 
         self.skip_button = ctk.CTkButton(self.control_frame, text=">|", command=self.skip_song)
-        self.skip_button.grid(row=0, column=4, padx=10, pady=10)
+        self.skip_button.grid(row=0, column=5, padx=10, pady=10)
 
         self.remove_button = ctk.CTkButton(self.control_frame, text="Remove Song", command=self.remove_songs)
-        self.remove_button.grid(row=0, column=5, padx=10, pady=10)
+        self.remove_button.grid(row=0, column=6, padx=10, pady=10)
 
         # spinning vinyl frame
         self.vinyl_frame = ctk.CTkFrame(self.root)
-        self.vinyl_frame.place(relx=0.82, rely=0.33, relwidth=0.1, relheight=0.225)
+        self.vinyl_frame.place(relx=0.85, rely=0.33, relwidth=0.1, relheight=0.225)
 
         # vinyl image
         self.vinyl_image_path = os.path.join(script_dir, "vinyl2.jpg")
@@ -118,16 +121,15 @@ class MusicPlayer:
         # check for end of track event
         self.check_music_end()
 
-        # Start spinning vinyl record animation
         self.angle = 0
-        self.update_progress()  # Start updating the progress bar
+        self.update_progress()  # start updating
         
     def load_folder(self):
         folder_path = filedialog.askdirectory()
         if folder_path:
             album_cover = None
             folder_name = os.path.basename(folder_path)
-            self.track_name_var.set(folder_name)  # Set track name to folder name
+            self.track_name_var.set(folder_name)  # set track name to folder name
             for file in os.listdir(folder_path):
                 file_path = os.path.join(folder_path, file)
                 if file.lower().endswith((".png", ".jpg", ".jpeg")):
@@ -213,31 +215,31 @@ class MusicPlayer:
         self.elapsed_time_label.configure(text="0:00")
         self.remaining_time_label.configure(text=f"-{self.format_time(self.progress.get())}")
 
+    def new_song(self):
+        self.queue.select_set(self.selected_index)
+        self.current_song = self.queue.get(self.selected_index)
+        self.track_name_var.set(self.folder_names[self.selected_index])
+        song_file = self.song_files[self.selected_index]
+        pygame.mixer.music.load(song_file)
+        pygame.mixer.music.play()
+        self.queue.selection_clear(0, END)
+        if song_file in self.song_to_cover:
+            self.display_album_cover(self.song_to_cover[song_file])
+        self.update_progress_bar()
+
     def skip_song(self):
         if self.selected_index + 1 < len(self.song_files):
             self.selected_index += 1
-            self.queue.select_set(self.selected_index)
-            self.current_song = self.queue.get(self.selected_index)
-            self.track_name_var.set(self.folder_names[self.selected_index])
-            song_file = self.song_files[self.selected_index]
-            pygame.mixer.music.load(song_file)
-            pygame.mixer.music.play()
-            self.queue.selection_clear(0, END)
-            if song_file in self.song_to_cover:
-                self.display_album_cover(self.song_to_cover[song_file])
-            self.update_progress_bar()
         else:
             self.selected_index = 0
-            self.queue.select_set(self.selected_index)
-            self.current_song = self.queue.get(self.selected_index)
-            self.track_name_var.set(self.folder_names[self.selected_index])
-            song_file = self.song_files[self.selected_index]
-            pygame.mixer.music.load(song_file)
-            pygame.mixer.music.play()
-            self.queue.selection_clear(0, END)
-            if song_file in self.song_to_cover:
-                self.display_album_cover(self.song_to_cover[song_file])
-            self.update_progress_bar()
+        self.new_song()
+
+    def previous_song(self):
+        if (self.selected_index == 0):
+            self.selected_index = len(self.song_files) - 1
+        else:
+            self.selected_index -= 1
+        self.new_song()
 
     def update_progress_bar(self):
         song_length = pygame.mixer.Sound(self.song_files[self.selected_index]).get_length()
