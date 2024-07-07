@@ -37,7 +37,7 @@ class MusicPlayer:
 
         # album cover
         self.album_cover_label = ctk.CTkLabel(self.track_frame, text="No Album Cover")
-        self.album_cover_label.place(relx=0.0125, rely=0.2, relwidth=0.1875, relheight=0.8)
+        self.album_cover_label.place(relx=0.0125, rely=0.15, relwidth=0.1875, relheight=0.8)
 
         # progress bar
         self.progress = ctk.CTkProgressBar(self.track_frame)
@@ -117,9 +117,6 @@ class MusicPlayer:
         self.is_paused = False
         self.stopped = False
         self.selected_index = 0
-
-        # check for end of track event
-        self.check_music_end()
 
         self.angle = 0
         self.update_progress()  # start updating
@@ -248,30 +245,28 @@ class MusicPlayer:
         self.update_progress()  # start updating progress bar
 
     def update_progress(self):
+        # update progress bar and spin vinyl
         if pygame.mixer.music.get_busy() and not self.stopped:
             current_time = pygame.mixer.music.get_pos() / 1000
             self.progress.set(current_time / self.progress_length)
             self.elapsed_time_label.configure(text=self.format_time(current_time))
             self.remaining_time_label.configure(text=f"-{self.format_time(self.progress_length - current_time)}")
-            if not self.stopped and self.song_files:
-                self.angle += 5
-                img = Image.open(self.vinyl_image_path)
-                img = img.resize((150, 150), Image.LANCZOS)
-                img = img.rotate(self.angle)
-                self.vinyl_image = CTkImage(light_image=img, dark_image=img, size=(150, 150))
-                self.vinyl_label.configure(image=self.vinyl_image)
-                self.vinyl_label.image = self.vinyl_image
-            self.root.after(1000, self.update_progress)  # keep updating progress 
+            self.angle += 2
+            img = Image.open(self.vinyl_image_path)
+            img = img.resize((150, 150), Image.LANCZOS)
+            img = img.rotate(self.angle)
+            self.vinyl_image = CTkImage(light_image=img, dark_image=img, size=(150, 150))
+            self.vinyl_label.configure(image=self.vinyl_image)
+            self.vinyl_label.image = self.vinyl_image
+        # next song if current song ended
+        elif not pygame.mixer.music.get_busy() and not self.is_paused and self.song_files and not self.stopped:
+            self.skip_song()
+        self.root.after(100, self.update_progress)  # keep updating progress 
 
     def format_time(self, seconds):
         minutes = int(seconds // 60)
         seconds = int(seconds % 60)
         return f"{minutes}:{seconds:02}"
-
-    def check_music_end(self):
-        if not pygame.mixer.music.get_busy() and not self.is_paused and self.song_files and not self.stopped:
-            self.skip_song()
-        self.root.after(100, self.check_music_end)
 
 root = ctk.CTk()
 app = MusicPlayer(root)
